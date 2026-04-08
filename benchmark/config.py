@@ -32,4 +32,4 @@ API_CALL_DELAY = 2.0  # seconds between documents
 DEFAULT_NUM_SAMPLES = 10
 
 # HuggingFace
-HF_DATASET_REPO = "OpenPecha/ai-text-outline-benchmark"
+HF_DATASET_REPO = "openpecha/ai-text-outline-benchmark"
