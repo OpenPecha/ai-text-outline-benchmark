@@ -1,13 +1,12 @@
-# Data files (large, generated)
-data/samples/
-data/predictions/
-data/ground_truth.json
-data/results.json
-data/report.md
+# Large generated data — tracked via LFS or gitignored
+data/toc_images/
 data/hf_dataset/
 
-# Environment
+# Environment and secrets
 .env
+.claude/
+
+# Python artifacts
 __pycache__/
 *.pyc
 *.egg-info/

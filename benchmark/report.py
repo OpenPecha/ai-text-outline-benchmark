@@ -1,13 +1,22 @@
 """Generate markdown report from benchmark results."""
 
+from __future__ import annotations
+
 import json
+from pathlib import Path
 from tabulate import tabulate
 from benchmark.config import RESULTS_PATH, REPORT_PATH, TOLERANCE_VALUES
 
 
-def generate_report():
+def generate_report(
+    results_path: Path | None = None,
+    report_path: Path | None = None,
+):
     """Generate a markdown report from results.json."""
-    with open(RESULTS_PATH, "r", encoding="utf-8") as f:
+    results_path = results_path or RESULTS_PATH
+    report_path = report_path or REPORT_PATH
+
+    with open(results_path, "r", encoding="utf-8") as f:
         results = json.load(f)
 
     meta = results["run_metadata"]
@@ -114,11 +123,11 @@ def generate_report():
 
     report_text = "\n".join(lines)
 
-    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(REPORT_PATH, "w", encoding="utf-8") as f:
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(report_path, "w", encoding="utf-8") as f:
         f.write(report_text)
 
-    print(f"Report saved to {REPORT_PATH}")
+    print(f"Report saved to {report_path}")
     print("\n" + report_text)
 
 

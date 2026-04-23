@@ -6,6 +6,7 @@ import json
 import time
 import statistics
 from datetime import datetime, timezone
+from pathlib import Path
 
 from ai_text_outline import extract_toc_indices
 
@@ -20,19 +21,38 @@ from benchmark.config import (
 from benchmark.metrics import compute_all_metrics
 
 
-def run_benchmark(gemini_api_key: str | None = None):
-    """Run extract_toc_indices on all samples and compute metrics."""
-    with open(GROUND_TRUTH_PATH, "r", encoding="utf-8") as f:
+def run_benchmark(
+    gemini_api_key: str | None = None,
+    *,
+    samples_dir: Path | None = None,
+    predictions_dir: Path | None = None,
+    ground_truth_path: Path | None = None,
+    results_path: Path | None = None,
+    api_call_delay: float | None = None,
+):
+    """Run extract_toc_indices on all samples and compute metrics.
+
+    All path/delay arguments default to the values in ``benchmark.config``;
+    pass explicit values to run against a different sample set (e.g. the
+    staging split).
+    """
+    samples_dir = samples_dir or SAMPLES_DIR
+    predictions_dir = predictions_dir or PREDICTIONS_DIR
+    ground_truth_path = ground_truth_path or GROUND_TRUTH_PATH
+    results_path = results_path or RESULTS_PATH
+    delay = API_CALL_DELAY if api_call_delay is None else api_call_delay
+
+    with open(ground_truth_path, "r", encoding="utf-8") as f:
         ground_truth = json.load(f)
 
-    PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
+    predictions_dir.mkdir(parents=True, exist_ok=True)
 
     per_document = {}
     total = len(ground_truth)
 
     for i, (doc_id, gt) in enumerate(ground_truth.items(), 1):
-        text_path = SAMPLES_DIR / f"{doc_id}.txt"
-        pred_path = PREDICTIONS_DIR / f"{doc_id}.json"
+        text_path = samples_dir / f"{doc_id}.txt"
+        pred_path = predictions_dir / f"{doc_id}.json"
 
         print(f"[{i}/{total}] Processing {gt['filename']}...")
 
@@ -47,6 +67,8 @@ def run_benchmark(gemini_api_key: str | None = None):
                 kwargs = {"text": text}
                 if gemini_api_key:
                     kwargs["gemini_api_key"] = gemini_api_key
+                # Pass volume_id for vision-enhanced extraction
+                kwargs["volume_id"] = gt["filename"]
                 prediction = extract_toc_indices(**kwargs)
 
                 # Cache prediction
@@ -60,7 +82,7 @@ def run_benchmark(gemini_api_key: str | None = None):
 
                 # Rate limit
                 if i < total:
-                    time.sleep(API_CALL_DELAY)
+                    time.sleep(delay)
 
             except Exception as e:
                 print(f"  ERROR: {e}")
@@ -106,10 +128,10 @@ def run_benchmark(gemini_api_key: str | None = None):
         "aggregate": aggregate,
     }
 
-    with open(RESULTS_PATH, "w", encoding="utf-8") as f:
+    with open(results_path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
-    print(f"\nResults saved to {RESULTS_PATH}")
+    print(f"\nResults saved to {results_path}")
     _print_summary(aggregate)
 
 

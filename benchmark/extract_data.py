@@ -1,6 +1,9 @@
 """Extract benchmark samples from the outliner database."""
 
+from __future__ import annotations
+
 import json
+from pathlib import Path
 import psycopg2
 from benchmark.config import DB_CONFIG, SAMPLES_DIR, GROUND_TRUTH_PATH, DEFAULT_NUM_SAMPLES
 
@@ -34,8 +37,21 @@ ORDER BY span_start ASC;
 """
 
 
-def extract_benchmark_data(num_samples: int = DEFAULT_NUM_SAMPLES):
-    """Extract benchmark documents and ground truth from the database."""
+def extract_benchmark_data(
+    num_samples: int = DEFAULT_NUM_SAMPLES,
+    samples_dir: Path | None = None,
+    ground_truth_path: Path | None = None,
+):
+    """Extract benchmark documents and ground truth from the database.
+
+    Args:
+        num_samples: Maximum number of documents to extract.
+        samples_dir: Directory to save sample text files. Defaults to SAMPLES_DIR.
+        ground_truth_path: Path for ground truth JSON. Defaults to GROUND_TRUTH_PATH.
+    """
+    samples_dir = samples_dir or SAMPLES_DIR
+    ground_truth_path = ground_truth_path or GROUND_TRUTH_PATH
+
     for key in ("host", "user", "password"):
         if not DB_CONFIG[key]:
             raise ValueError(
@@ -43,7 +59,7 @@ def extract_benchmark_data(num_samples: int = DEFAULT_NUM_SAMPLES):
                 "See .env.example for required variables."
             )
 
-    SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
+    samples_dir.mkdir(parents=True, exist_ok=True)
 
     conn = psycopg2.connect(**DB_CONFIG)
     try:
@@ -66,7 +82,7 @@ def extract_benchmark_data(num_samples: int = DEFAULT_NUM_SAMPLES):
             content_length = doc["content_length"]
 
             # Save document text
-            text_path = SAMPLES_DIR / f"{doc_id}.txt"
+            text_path = samples_dir / f"{doc_id}.txt"
             text_path.write_text(content, encoding="utf-8")
 
             # Get ground truth segments
@@ -97,12 +113,12 @@ def extract_benchmark_data(num_samples: int = DEFAULT_NUM_SAMPLES):
             )
 
         # Save ground truth
-        GROUND_TRUTH_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(GROUND_TRUTH_PATH, "w", encoding="utf-8") as f:
+        ground_truth_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(ground_truth_path, "w", encoding="utf-8") as f:
             json.dump(ground_truth, f, ensure_ascii=False, indent=2)
 
-        print(f"\nSaved {len(ground_truth)} samples to {SAMPLES_DIR}")
-        print(f"Ground truth saved to {GROUND_TRUTH_PATH}")
+        print(f"\nSaved {len(ground_truth)} samples to {samples_dir}")
+        print(f"Ground truth saved to {ground_truth_path}")
 
     finally:
         conn.close()

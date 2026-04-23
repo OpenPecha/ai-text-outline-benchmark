@@ -12,7 +12,7 @@ dependencies = [
     "datasets>=2.14",
     "huggingface-hub>=0.19",
     "tabulate>=0.9",
-    "ai-text-outline>=0.5.0",
+    "ai-text-outline>=0.8.0",
 ]
 
 [project.optional-dependencies]
