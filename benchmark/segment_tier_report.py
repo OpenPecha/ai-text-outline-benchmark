@@ -202,12 +202,15 @@ def render_markdown(tiers: dict) -> str:
 
 
 def main() -> None:
+    from benchmark.config import current_version, version_paths
+    _default_results = version_paths(current_version()).results_path
+
     p = argparse.ArgumentParser(description="Tier docs by segment-count error vs GT.")
     p.add_argument(
         "--results",
         type=Path,
-        default=Path(__file__).resolve().parent.parent / "data" / "results.json",
-        help="Path to results.json",
+        default=_default_results,
+        help="Path to results.json (default: data/results/<installed-version>/results.json)",
     )
     p.add_argument(
         "--output",

@@ -12,11 +12,11 @@ from ai_text_outline import extract_toc_indices
 
 from benchmark.config import (
     SAMPLES_DIR,
-    PREDICTIONS_DIR,
     GROUND_TRUTH_PATH,
-    RESULTS_PATH,
     API_CALL_DELAY,
     TOLERANCE_VALUES,
+    current_version,
+    version_paths,
 )
 from benchmark.metrics import compute_all_metrics
 
@@ -24,6 +24,7 @@ from benchmark.metrics import compute_all_metrics
 def run_benchmark(
     gemini_api_key: str | None = None,
     *,
+    package_version: str | None = None,
     samples_dir: Path | None = None,
     predictions_dir: Path | None = None,
     ground_truth_path: Path | None = None,
@@ -32,15 +33,21 @@ def run_benchmark(
 ):
     """Run extract_toc_indices on all samples and compute metrics.
 
-    All path/delay arguments default to the values in ``benchmark.config``;
-    pass explicit values to run against a different sample set (e.g. the
-    staging split).
+    Results are written to data/results/{package_version}/ by default.
+    Pass ``package_version`` to evaluate a specific version; omit it to
+    auto-detect from the installed package.  Individual path overrides
+    (predictions_dir, results_path) take precedence over the version dir.
     """
+    pkg_ver = package_version or current_version()
+    paths = version_paths(pkg_ver)
+
     samples_dir = samples_dir or SAMPLES_DIR
-    predictions_dir = predictions_dir or PREDICTIONS_DIR
+    predictions_dir = predictions_dir or paths.predictions_dir
     ground_truth_path = ground_truth_path or GROUND_TRUTH_PATH
-    results_path = results_path or RESULTS_PATH
+    results_path = results_path or paths.results_path
     delay = API_CALL_DELAY if api_call_delay is None else api_call_delay
+
+    print(f"Evaluating package version: {pkg_ver}")
 
     with open(ground_truth_path, "r", encoding="utf-8") as f:
         ground_truth = json.load(f)
@@ -120,7 +127,7 @@ def run_benchmark(
     results = {
         "run_metadata": {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "package_version": _get_package_version(),
+            "package_version": pkg_ver,
             "num_documents": total,
             "tolerance_values": TOLERANCE_VALUES,
         },
@@ -133,14 +140,6 @@ def run_benchmark(
 
     print(f"\nResults saved to {results_path}")
     _print_summary(aggregate)
-
-
-def _get_package_version() -> str:
-    try:
-        import ai_text_outline
-        return ai_text_outline.__version__
-    except Exception:
-        return "unknown"
 
 
 def _compute_aggregate(per_document: dict) -> dict:

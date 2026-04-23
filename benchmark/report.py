@@ -5,16 +5,23 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from tabulate import tabulate
-from benchmark.config import RESULTS_PATH, REPORT_PATH, TOLERANCE_VALUES
+from benchmark.config import TOLERANCE_VALUES, current_version, version_paths
 
 
 def generate_report(
     results_path: Path | None = None,
     report_path: Path | None = None,
+    package_version: str | None = None,
 ):
-    """Generate a markdown report from results.json."""
-    results_path = results_path or RESULTS_PATH
-    report_path = report_path or REPORT_PATH
+    """Generate a markdown report from results.json.
+
+    If results_path is omitted, uses data/results/{package_version}/results.json
+    where package_version defaults to the installed package version.
+    """
+    pkg_ver = package_version or current_version()
+    paths = version_paths(pkg_ver)
+    results_path = results_path or paths.results_path
+    report_path = report_path or paths.report_path
 
     with open(results_path, "r", encoding="utf-8") as f:
         results = json.load(f)

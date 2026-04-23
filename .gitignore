@@ -1,4 +1,4 @@
-# Large generated data — tracked via LFS or gitignored
+# Large local-only data — not committed
 data/toc_images/
 data/hf_dataset/
 
